@@ -1,0 +1,160 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retail POS Login </title>
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page-layout">
+  <div class="login-card glass-card login-card-padding">
+    <h1 class="login-title">Retail POS</h1>
+
+    <!-- Form Toggle -->
+    <div class="login-tab-container">
+      <button
+        id="user-tab"
+        class="form-tab active flex-1 py-4 font-medium text-center"
+        aria-label="Show user login form"
+      >
+        User
+      </button>
+      <button
+        id="staff-tab"
+        class="form-tab flex-1 py-4 font-medium text-center"
+        aria-label="Show staff login form"
+      >
+        Staff
+      </button>
+    </div>
+
+    <!-- User Login Form -->
+    <section id="user-form" class="form-section active login-form-spacing" aria-label="User login form">
+      <form class="space-y-6" novalidate>
+        <div>
+          <label for="login-username" class="login-input-label">Username</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-user"></i>
+            </span>
+            <input
+              id="login-username"
+              type="text"
+              required
+              placeholder="Username"
+              class="login-input"
+              aria-describedby="login-username-desc"
+            />
+          </div>
+          <p id="login-username-desc" class="sr-only"></p>
+        </div>
+        <div>
+          <label for="login-password" class="login-input-label">Password</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-lock"></i>
+            </span>
+            <input
+              id="login-password"
+              type="password"
+              required
+              placeholder="Password"
+              class="login-input"
+              aria-describedby="login-password-desc"
+            />
+          </div>
+          <p id="login-password-desc" class="sr-only"></p>
+        </div>
+        <div class="login-forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+        <button
+          type="submit"
+          class="login-submit-btn"
+          aria-label="Login as user"
+        >
+          <i class="fas fa-sign-in-alt"></i> Login as User
+        </button>
+      </form>
+
+      <div class="login-register-link">
+        <p>Don't have an account?<a href="register.html"> Register here</a></p>
+      </div>
+    </section>
+
+    <!-- Staff Login Form -->
+    <section id="staff-form" class="form-section" aria-label="Staff login form">
+      <form class="space-y-6" novalidate>
+        <div>
+          <label for="staff-username" class="login-input-label">Username</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-user"></i>
+            </span>
+            <input
+              id="staff-username"
+              type="text"
+              required
+              placeholder="Username"
+              class="login-input"
+              aria-describedby="staff-username-desc"
+            />
+          </div>
+          <p id="staff-username-desc" class="sr-only"></p>
+        </div>
+        <div>
+          <label for="staff-password" class="login-input-label">Password</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-lock"></i>
+            </span>
+            <input
+              id="staff-password"
+              type="password"
+              required
+              placeholder="Password"
+              class="login-input"
+              aria-describedby="staff-password-desc"
+            />
+          </div>
+          <p id="staff-password-desc" class="sr-only"></p>
+        </div>
+        <div class="login-forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+        <button
+          type="submit"
+          class="login-submit-btn"
+          aria-label="Login as staff"
+        >
+          <i class="fas fa-sign-in-alt"></i> Login as Staff
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const userTab = document.getElementById('user-tab');
+      const staffTab = document.getElementById('staff-tab');
+      const userForm = document.getElementById('user-form');
+      const staffForm = document.getElementById('staff-form');
+
+      // Toggle between forms
+      userTab.addEventListener('click', function() {
+        userTab.classList.add('active');
+        staffTab.classList.remove('active');
+        userForm.classList.add('active');
+        staffForm.classList.remove('active');
+      });
+
+      staffTab.addEventListener('click', function() {
+        staffTab.classList.add('active');
+        userTab.classList.remove('active');
+        staffForm.classList.add('active');
+        userForm.classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>
