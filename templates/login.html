@@ -1,0 +1,221 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retail POS Login </title>
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-page-layout">
+  <div class="login-card glass-card login-card-padding">
+    <h1 class="login-title">Retail POS</h1>
+
+    <!-- Flashed Messages Data -->
+    <div id="flash-messages" class="hidden">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div data-category="{{ category }}" data-message="{{ message }}"></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    </div>
+
+    <!-- Form Toggle -->
+    <div class="login-tab-container">
+      <button
+        id="user-tab"
+        class="form-tab active flex-1 py-4 font-medium text-center"
+        aria-label="Show user login form"
+      >
+        User
+      </button>
+      <button
+        id="staff-tab"
+        class="form-tab flex-1 py-4 font-medium text-center"
+        aria-label="Show staff login form"
+      >
+        Staff
+      </button>
+    </div>
+
+    <!-- User Login Form -->
+    <section id="user-form" class="form-section active login-form-spacing" aria-label="User login form">
+      <form class="space-y-6" action="{{ url_for('login') }}" method="POST">
+        <input type="hidden" name="login_type" value="user">
+        <div>
+          <label for="login-username" class="login-input-label">Username</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-user"></i>
+            </span>
+            <input
+              id="login-username"
+              name="username"
+              type="text"
+              required
+              placeholder="Username"
+              class="login-input"
+              aria-describedby="login-username-desc"
+            />
+          </div>
+          <p id="login-username-desc" class="sr-only"></p>
+        </div>
+        <div>
+          <label for="login-password" class="login-input-label">Password</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-lock"></i>
+            </span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              required
+              placeholder="Password"
+              class="login-input"
+              aria-describedby="login-password-desc"
+            />
+          </div>
+          <p id="login-password-desc" class="sr-only"></p>
+        </div>
+        <div class="login-forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+        <button
+          type="submit"
+          class="login-submit-btn"
+          aria-label="Login as user"
+        >
+          <i class="fas fa-sign-in-alt"></i> Login as User
+        </button>
+      </form>
+
+      <div class="login-register-link">
+        <p>Don't have an account?<a href="{{ url_for('register') }}"> Register here</a></p>
+      </div>
+    </section>
+
+    <!-- Staff Login Form -->
+    <section id="staff-form" class="form-section" aria-label="Staff login form">
+      <form class="space-y-6" action="{{ url_for('login') }}" method="POST">
+        <input type="hidden" name="login_type" value="staff">
+        <div>
+          <label for="staff-username" class="login-input-label">Username</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-user"></i>
+            </span>
+            <input
+              id="staff-username"
+              name="username"
+              type="text"
+              required
+              placeholder="Username"
+              class="login-input"
+              aria-describedby="staff-username-desc"
+            />
+          </div>
+          <p id="staff-username-desc" class="sr-only"></p>
+        </div>
+        <div>
+          <label for="staff-password" class="login-input-label">Password</label>
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <i class="bx bx-lock"></i>
+            </span>
+            <input
+              id="staff-password"
+              name="password"
+              type="password"
+              required
+              placeholder="Password"
+              class="login-input"
+              aria-describedby="staff-password-desc"
+            />
+          </div>
+          <p id="staff-password-desc" class="sr-only"></p>
+        </div>
+        <div class="login-forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+        <button
+          type="submit"
+          class="login-submit-btn"
+          aria-label="Login as staff"
+        >
+          <i class="fas fa-sign-in-alt"></i> Login as Staff
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Toast notification system
+      function showToast(message, type = 'info') {
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+          toastContainer = document.createElement('div');
+          toastContainer.id = 'toast-container';
+          toastContainer.className = 'w-full flex flex-col gap-2 mb-4';
+          const loginCard = document.querySelector('.login-card');
+          // Insert after the title
+          const title = loginCard.querySelector('.login-title');
+          title.parentNode.insertBefore(toastContainer, title.nextSibling);
+        }
+
+        const toast = document.createElement('div');
+        let bgClass = 'bg-blue-500';
+        if (type === 'success') bgClass = 'bg-green-500';
+        if (type === 'error') bgClass = 'bg-red-500';
+        if (type === 'warning') bgClass = 'bg-yellow-500';
+
+        toast.className = `flex items-center w-full p-4 mb-2 text-white ${bgClass} rounded-lg shadow fade-in`;
+        toast.innerHTML = `
+          <div class="ml-3 text-sm font-normal">${message}</div>
+          <button type="button" class="ml-auto -mx-1.5 -my-1.5 text-white hover:text-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 inline-flex h-8 w-8" onclick="this.parentElement.remove()">
+            <span>&times;</span>
+          </button>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+          }
+        }, 4000);
+      }
+
+      // Check for flash messages
+      const flashDataElements = document.querySelectorAll('#flash-messages div');
+      flashDataElements.forEach(el => {
+        showToast(el.dataset.message, el.dataset.category);
+      });
+
+      const userTab = document.getElementById('user-tab');
+      const staffTab = document.getElementById('staff-tab');
+      const userForm = document.getElementById('user-form');
+      const staffForm = document.getElementById('staff-form');
+
+      // Toggle between forms
+      userTab.addEventListener('click', function() {
+        userTab.classList.add('active');
+        staffTab.classList.remove('active');
+        userForm.classList.add('active');
+        staffForm.classList.remove('active');
+      });
+
+      staffTab.addEventListener('click', function() {
+        staffTab.classList.add('active');
+        userTab.classList.remove('active');
+        staffForm.classList.add('active');
+        userForm.classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>
