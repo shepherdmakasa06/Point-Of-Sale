@@ -357,9 +357,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Clear cart and inputs
         cart = [];
-        updateCart();
         const amountTenderedValue = amountTendered.value;
         amountTendered.value = '';
+        updateCart();
 
         // Fetch updated transactions from backend
         fetchTransactions();
