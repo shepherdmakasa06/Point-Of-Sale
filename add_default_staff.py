@@ -16,7 +16,7 @@ conn = pymysql.connect(
 try:
     with conn.cursor() as cursor:
         username = 'Shepherd'
-        password = '12345'
+        password = 'Kipkip01#A'
         email = 'shepherdmakasa06@gmail.com'
         name = 'Admin Staff'
         role = 'staff'

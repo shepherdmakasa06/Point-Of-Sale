@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -6,35 +7,32 @@
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body class="login-page-layout">
   <div class="login-card glass-card login-card-padding">
-    <h1 class="login-title">Retail POS</h1>
+    <div class="mb-4 text-center">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Pro-Tech Logo" class="login-brand-logo mx-auto object-contain">
+      <h1 class="login-title">Retail POS</h1>
+    </div>
 
     <!-- Flashed Messages Data -->
     <div id="flash-messages" class="hidden">
-    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div data-category="{{ category }}" data-message="{{ message }}"></div>
-        {% endfor %}
+      {% for category, message in messages %}
+      <div data-category="{{ category }}" data-message="{{ message }}"></div>
+      {% endfor %}
       {% endif %}
-    {% endwith %}
+      {% endwith %}
     </div>
 
     <!-- Form Toggle -->
     <div class="login-tab-container">
-      <button
-        id="user-tab"
-        class="form-tab active flex-1 py-4 font-medium text-center"
-        aria-label="Show user login form"
-      >
+      <button id="user-tab" class="form-tab active flex-1 py-4 font-medium text-center"
+        aria-label="Show user login form">
         User
       </button>
-      <button
-        id="staff-tab"
-        class="form-tab flex-1 py-4 font-medium text-center"
-        aria-label="Show staff login form"
-      >
+      <button id="staff-tab" class="form-tab flex-1 py-4 font-medium text-center" aria-label="Show staff login form">
         Staff
       </button>
     </div>
@@ -49,15 +47,8 @@
             <span class="login-input-icon">
               <i class="bx bx-user"></i>
             </span>
-            <input
-              id="login-username"
-              name="username"
-              type="text"
-              required
-              placeholder="Username"
-              class="login-input"
-              aria-describedby="login-username-desc"
-            />
+            <input id="login-username" name="username" type="text" required placeholder="Username" class="login-input"
+              aria-describedby="login-username-desc" />
           </div>
           <p id="login-username-desc" class="sr-only"></p>
         </div>
@@ -67,26 +58,15 @@
             <span class="login-input-icon">
               <i class="bx bx-lock"></i>
             </span>
-            <input
-              id="login-password"
-              name="password"
-              type="password"
-              required
-              placeholder="Password"
-              class="login-input"
-              aria-describedby="login-password-desc"
-            />
+            <input id="login-password" name="password" type="password" required placeholder="Password"
+              class="login-input" aria-describedby="login-password-desc" />
           </div>
           <p id="login-password-desc" class="sr-only"></p>
         </div>
         <div class="login-forgot-link">
           <a href="#">Forgot password?</a>
         </div>
-        <button
-          type="submit"
-          class="login-submit-btn"
-          aria-label="Login as user"
-        >
+        <button type="submit" class="login-submit-btn" aria-label="Login as user">
           <i class="fas fa-sign-in-alt"></i> Login as User
         </button>
       </form>
@@ -106,15 +86,8 @@
             <span class="login-input-icon">
               <i class="bx bx-user"></i>
             </span>
-            <input
-              id="staff-username"
-              name="username"
-              type="text"
-              required
-              placeholder="Username"
-              class="login-input"
-              aria-describedby="staff-username-desc"
-            />
+            <input id="staff-username" name="username" type="text" required placeholder="Username" class="login-input"
+              aria-describedby="staff-username-desc" />
           </div>
           <p id="staff-username-desc" class="sr-only"></p>
         </div>
@@ -124,26 +97,15 @@
             <span class="login-input-icon">
               <i class="bx bx-lock"></i>
             </span>
-            <input
-              id="staff-password"
-              name="password"
-              type="password"
-              required
-              placeholder="Password"
-              class="login-input"
-              aria-describedby="staff-password-desc"
-            />
+            <input id="staff-password" name="password" type="password" required placeholder="Password"
+              class="login-input" aria-describedby="staff-password-desc" />
           </div>
           <p id="staff-password-desc" class="sr-only"></p>
         </div>
         <div class="login-forgot-link">
           <a href="#">Forgot password?</a>
         </div>
-        <button
-          type="submit"
-          class="login-submit-btn"
-          aria-label="Login as staff"
-        >
+        <button type="submit" class="login-submit-btn" aria-label="Login as staff">
           <i class="fas fa-sign-in-alt"></i> Login as Staff
         </button>
       </form>
@@ -151,7 +113,7 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Toast notification system
       function showToast(message, type = 'info') {
         let toastContainer = document.getElementById('toast-container');
@@ -175,9 +137,9 @@
         toast.innerHTML = `
           <div class="ml-3 text-sm font-normal">${message}</div>
         `;
-        
+
         toastContainer.appendChild(toast);
-        
+
         setTimeout(() => {
           if (toast.parentElement) {
             toast.style.opacity = '0';
@@ -199,14 +161,14 @@
       const staffForm = document.getElementById('staff-form');
 
       // Toggle between forms
-      userTab.addEventListener('click', function() {
+      userTab.addEventListener('click', function () {
         userTab.classList.add('active');
         staffTab.classList.remove('active');
         userForm.classList.add('active');
         staffForm.classList.remove('active');
       });
 
-      staffTab.addEventListener('click', function() {
+      staffTab.addEventListener('click', function () {
         staffTab.classList.add('active');
         userTab.classList.remove('active');
         staffForm.classList.add('active');
@@ -215,4 +177,5 @@
     });
   </script>
 </body>
+
 </html>

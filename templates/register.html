@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -6,19 +7,23 @@
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body class="login-page-layout">
   <div class="login-card glass-card login-card-padding">
-    <h1 class="login-title">Retail POS Register</h1>
+    <div class="mb-4 text-center">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Pro-Tech Logo" class="login-brand-logo mx-auto object-contain">
+      <h1 class="login-title">Retail POS</h1>
+    </div>
 
     <!-- Flashed Messages Data -->
     <div id="flash-messages" class="hidden">
-    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div data-category="{{ category }}" data-message="{{ message }}"></div>
-        {% endfor %}
+      {% for category, message in messages %}
+      <div data-category="{{ category }}" data-message="{{ message }}"></div>
+      {% endfor %}
       {% endif %}
-    {% endwith %}
+      {% endwith %}
     </div>
 
     <!-- Registration Form -->
@@ -26,70 +31,34 @@
       <form class="space-y-6" action="{{ url_for('register') }}" method="POST">
         <div>
           <label for="name" class="login-input-label">Full Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            class="login-input"
-            aria-describedby="name-desc"
-          />
+          <input id="name" name="name" type="text" required class="login-input" aria-describedby="name-desc" />
           <p id="name-desc" class="sr-only"></p>
         </div>
         <div>
           <label for="username" class="login-input-label">Username</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            required
-            class="login-input"
-            aria-describedby="username-desc"
-          />
+          <input id="username" name="username" type="text" required class="login-input"
+            aria-describedby="username-desc" />
           <p id="username-desc" class="sr-only"></p>
         </div>
         <div>
           <label for="email" class="login-input-label">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="you@example.com"
-            class="login-input"
-            aria-describedby="email-desc"
-          />
+          <input id="email" name="email" type="email" required placeholder="you@example.com" class="login-input"
+            aria-describedby="email-desc" />
           <p id="email-desc" class="sr-only"></p>
         </div>
         <div>
           <label for="password" class="login-input-label">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            class="login-input"
-            aria-describedby="password-desc"
-          />
+          <input id="password" name="password" type="password" required class="login-input"
+            aria-describedby="password-desc" />
           <p id="password-desc" class="sr-only"></p>
         </div>
         <div>
           <label for="password-confirm" class="login-input-label">Confirm Password</label>
-          <input
-            id="password-confirm"
-            name="password_confirm"
-            type="password"
-            required
-            class="login-input"
-            aria-describedby="password-confirm-desc"
-          />
+          <input id="password-confirm" name="password_confirm" type="password" required class="login-input"
+            aria-describedby="password-confirm-desc" />
           <p id="password-confirm-desc" class="sr-only"></p>
         </div>
-        <button
-          type="submit"
-          class="login-submit-btn"
-          aria-label="Register"
-        >
+        <button type="submit" class="login-submit-btn" aria-label="Register">
           <i class="fas fa-user-plus"></i> Register
         </button>
       </form>
@@ -101,7 +70,7 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // Toast notification system
       function showToast(message, type = 'info') {
         let toastContainer = document.getElementById('toast-container');
@@ -128,9 +97,9 @@
             <span>&times;</span>
           </button>
         `;
-        
+
         toastContainer.appendChild(toast);
-        
+
         setTimeout(() => {
           if (toast.parentElement) {
             toast.style.opacity = '0';
@@ -148,4 +117,5 @@
     });
   </script>
 </body>
+
 </html>

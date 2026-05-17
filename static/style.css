@@ -584,6 +584,7 @@ body {
   font-weight: 700;
   color: #1f2937;
   text-align: center;
+  margin-top: 0;
   margin-bottom: 2rem;
 }
 .login-tab-container {
@@ -678,4 +679,11 @@ body {
 }
 .login-register-link a:hover {
   color: #c7d2fe;
+}
+
+.login-brand-logo {
+  height: 65px;
+  width: auto;
+  max-width: 100%;
+  margin-bottom: 5px;
 }
