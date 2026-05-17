@@ -49,8 +49,11 @@
     <!-- Main Content -->
     <div class="dashboard-main">
       <!-- Header -->
-      <header class="dashboard-header">
-        <div>
+      <header class="dashboard-header flex items-center justify-between">
+        <div class="flex items-center">
+          <button id="mobile-menu-btn" class="lg:hidden mr-4 text-gray-600 hover:text-gray-900" style="display: none;">
+            <i class="bx bx-menu text-3xl"></i>
+          </button>
           <h2 id="page-title" class="dashboard-header-title">Stock Management</h2>
         </div>
         <div class="dashboard-header-user">
@@ -221,6 +224,17 @@
                 <div class="flex items-center space-x-2">
                   <input type="checkbox" id="setting-auto-print" class="rounded">
                   <label for="setting-auto-print" class="text-sm">Auto-print receipts</label>
+                </div>
+                <div class="mt-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Paper Size</label>
+                  <select id="setting-paper-size" class="w-full p-2 border rounded-lg">
+                    <option value="auto">Default</option>
+                    <option value="57mm 40mm">57mm × 40mm</option>
+                    <option value="80mm 80mm">80mm × 80mm</option>
+                    <option value="80mm 70mm">80mm × 70mm</option>
+                    <option value="76mm 76mm">76mm × 76mm</option>
+                    <option value="57mm 50mm">57mm × 50mm</option>
+                  </select>
                 </div>
                 <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
                   <i class="fas fa-save mr-2"></i>Save Printer Settings
@@ -410,7 +424,7 @@
       <span class="close">&times;</span>
       <div class="flex justify-between items-center mb-4 pr-6">
         <h3 class="text-lg font-semibold">Session Summary</h3>
-        <button id="export-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm shadow flex items-center">
+        <button id="export-pdf-btn" class="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm shadow flex items-center">
           <i class="fas fa-file-pdf mr-2"></i> Export PDF
         </button>
       </div>

@@ -15,9 +15,9 @@ conn = pymysql.connect(
 
 try:
     with conn.cursor() as cursor:
-        username = 'admin'
-        password = 'password123'
-        email = 'admin@retailpos.com'
+        username = 'Shepherd'
+        password = '12345'
+        email = 'shepherdmakasa06@gmail.com'
         name = 'Admin Staff'
         role = 'staff'
         hashed_password = generate_password_hash(password)

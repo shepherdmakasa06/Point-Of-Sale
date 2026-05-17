@@ -13,10 +13,6 @@ function showToast(message, type = 'info') {
   toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-white ${bgClass} rounded-lg shadow fade-in`;
   toast.innerHTML = `
     <div class="ml-3 text-sm font-normal">${message}</div>
-    <button type="button" class="ml-auto -mx-1.5 -my-1.5 text-white hover:text-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 inline-flex h-8 w-8" onclick="this.parentElement.remove()">
-      <span class="sr-only">Close</span>
-      <i class="fas fa-times"></i>
-    </button>
   `;
   
   toastContainer.appendChild(toast);
@@ -46,6 +42,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const headerProfile = document.getElementById('header-profile');
   const logoutBtn = document.getElementById('logout-btn');
   const profileSection = document.getElementById('profile-section');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.querySelector('.dashboard-sidebar');
+
+  if (mobileMenuBtn && sidebar) {
+    mobileMenuBtn.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+    });
+  }
 
   navButtons.forEach(button => {
     button.addEventListener('click', function() {
@@ -63,6 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const buttonText = this.textContent.trim();
       pageTitle.textContent = buttonText;
+      
+      if (window.innerWidth <= 1024 && sidebar) {
+        sidebar.classList.remove('open');
+      }
     });
   });
 
@@ -136,12 +144,12 @@ document.addEventListener('DOMContentLoaded', function() {
             sales.forEach(sale => {
               const row = document.createElement('tr');
               row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#${String(sale.id).padStart(5, '0')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${sale.display_id && sale.display_id.startsWith('SESS') ? 'Session' : 'Sale'} #${sale.display_id}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(sale.created_at).toLocaleString()}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sale.user_name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${sale.total_amount.toFixed(2)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button class="text-blue-600 hover:text-blue-900 mr-3 view-sale-btn" data-id="${sale.id}">View Details</button>
+                  <button class="text-blue-600 hover:text-blue-900 mr-3 view-sale-btn" data-id="${sale.display_id}" data-date="${sale.created_at}" data-cashier="${sale.user_name}">View Details</button>
                 </td>
               `;
               tbody.appendChild(row);
@@ -235,6 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Sale Details Modal
       if (e.target.classList.contains('view-sale-btn')) {
         const saleId = e.target.dataset.id;
+        const saleDate = new Date(e.target.dataset.date).toLocaleString();
+        const saleCashier = e.target.dataset.cashier;
         const summaryModal = document.getElementById('summary-modal');
         const summaryContent = document.getElementById('summary-content');
         
@@ -243,6 +253,10 @@ document.addEventListener('DOMContentLoaded', function() {
           if (res.ok) {
             const items = await res.json();
             let itemsHtml = `
+              <div class="mb-4 text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border">
+                <p><strong>Date:</strong> ${saleDate}</p>
+                <p><strong>Cashier:</strong> ${saleCashier}</p>
+              </div>
               <table class="w-full text-sm text-left">
                 <thead class="bg-gray-50 border-b">
                   <tr>
@@ -675,6 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const storeFooterEl = document.getElementById('setting-store-footer');
         
         const autoPrintEl = document.getElementById('setting-auto-print');
+        const paperSizeEl = document.getElementById('setting-paper-size');
         
         if (storeNameEl && settings.store_name) storeNameEl.value = settings.store_name;
         if (storeAddressEl && settings.store_address) storeAddressEl.value = settings.store_address;
@@ -682,6 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (storeFooterEl && settings.store_footer) storeFooterEl.value = settings.store_footer;
         
         if (autoPrintEl && settings.auto_print) autoPrintEl.checked = (settings.auto_print === 'true');
+        if (paperSizeEl && settings.paper_size) paperSizeEl.value = settings.paper_size;
       }
     } catch (err) {
       console.error('Failed to fetch settings', err);
@@ -721,7 +737,8 @@ document.addEventListener('DOMContentLoaded', function() {
     printerSettingsForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       const settingsData = {
-        auto_print: document.getElementById('setting-auto-print').checked ? 'true' : 'false'
+        auto_print: document.getElementById('setting-auto-print').checked ? 'true' : 'false',
+        paper_size: document.getElementById('setting-paper-size').value
       };
 
       try {

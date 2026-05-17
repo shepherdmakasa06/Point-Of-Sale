@@ -13,10 +13,6 @@ function showToast(message, type = 'info') {
   toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-white ${bgClass} rounded-lg shadow fade-in`;
   toast.innerHTML = `
     <div class="ml-3 text-sm font-normal">${message}</div>
-    <button type="button" class="ml-auto -mx-1.5 -my-1.5 text-white hover:text-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 inline-flex h-8 w-8" onclick="this.parentElement.remove()">
-      <span class="sr-only">Close</span>
-      <i class="fas fa-times"></i>
-    </button>
   `;
   
   toastContainer.appendChild(toast);
@@ -46,6 +42,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const headerUser = document.getElementById('header-user');
   const profileSection = document.getElementById('profile-section');
   const userLogoutBtn = document.getElementById('user-logout-btn');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const sidebar = document.querySelector('.dashboard-sidebar');
+
+  if (mobileMenuBtn && sidebar) {
+    mobileMenuBtn.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+    });
+  }
 
   navButtons.forEach(button => {
     button.addEventListener('click', function() {
@@ -63,6 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const buttonText = this.textContent.trim();
       pageTitle.textContent = buttonText;
+      
+      if (window.innerWidth <= 1024 && sidebar) {
+        sidebar.classList.remove('open');
+      }
     });
   });
 
@@ -123,9 +131,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const sessionInfo = document.getElementById('session-info');
   const sessionTimeEl = document.getElementById('session-time');
 
+  let currentSessionId = null;
+
   if (startSessionBtn && endSessionBtn) {
     startSessionBtn.addEventListener('click', function() {
       sessionActive = true;
+      currentSessionId = 'SESS-' + Date.now();
       startSessionBtn.classList.add('hidden');
       endSessionBtn.classList.remove('hidden');
       sessionInfo.classList.remove('hidden');
@@ -140,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       sessionActive = false;
+      currentSessionId = null;
       cart = [];
       updateCart();
       amountTendered.value = '';
@@ -262,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="item-price">$${itemTotal.toFixed(2)}</div>
         <button class="remove-btn" onclick="removeFromCart(${item.id})">
-          <i class="fas fa-trash"></i>
+          <i class="bx bx-trash text-lg"></i>
         </button>
       `;
       cartItems.appendChild(itemElement);
@@ -336,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart, tendered })
+        body: JSON.stringify({ cart, tendered, session_id: currentSessionId })
       });
 
       if (res.ok) {
@@ -398,14 +410,14 @@ document.addEventListener('DOMContentLoaded', function() {
           transactionElement.innerHTML = `
             <div class="flex justify-between items-start">
               <div>
-                <h4 class="font-semibold">Transaction #${String(sale.id).padStart(5, '0')}</h4>
+                <h4 class="font-semibold">${sale.display_id && sale.display_id.startsWith('SESS') ? 'Session' : 'Transaction'} #${sale.display_id}</h4>
                 <p class="text-gray-600">${new Date(sale.created_at).toLocaleString()}</p>
               </div>
               <span class="text-green-600 font-semibold">$${sale.total_amount.toFixed(2)}</span>
             </div>
             <div class="flex justify-between items-center mt-2">
               <p class="text-sm text-gray-600">Sale Completed</p>
-              <button class="text-blue-500 hover:text-blue-700 text-sm" onclick="printReceipt(${sale.id}, ${sale.total_amount}, ${sale.tendered}, ${sale.change_amount}, '${sale.created_at}')">
+              <button class="text-blue-500 hover:text-blue-700 text-sm" onclick="printReceipt('${sale.display_id}', ${sale.total_amount}, ${sale.tendered}, ${sale.change_amount}, '${sale.created_at}')">
                 <i class="fas fa-print mr-1"></i>Print Receipt
               </button>
             </div>
@@ -473,7 +485,8 @@ document.addEventListener('DOMContentLoaded', function() {
           <head>
             <title>Receipt #${saleId}</title>
             <style>
-              body { font-family: 'Courier New', Courier, monospace; margin: 20px; font-size: 14px; }
+              @page { margin: 0; size: ${settings.paper_size && settings.paper_size !== 'auto' ? settings.paper_size : 'auto'}; }
+              body { font-family: 'Courier New', Courier, monospace; margin: 10px; font-size: 14px; width: ${settings.paper_size ? settings.paper_size.split(' ')[0] : 'auto'}; }
               .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
               .details { margin-bottom: 20px; }
               .totals { border-top: 1px dashed #000; padding-top: 10px; }
@@ -486,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <h2>${settings.store_name || 'Retail POS'}</h2>
               ${settings.store_address ? `<p>${settings.store_address}</p>` : ''}
               ${settings.store_contact ? `<p>${settings.store_contact}</p>` : ''}
-              <p style="margin-top: 10px;">Receipt #${String(saleId).padStart(5, '0')}</p>
+              <p style="margin-top: 10px;">Receipt #${saleId}</p>
               <p>${new Date(date).toLocaleString()}</p>
             </div>
             <div class="details">

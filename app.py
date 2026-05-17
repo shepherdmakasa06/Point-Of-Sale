@@ -55,7 +55,7 @@ def login():
                     else:
                         return redirect(url_for('user_dashboard'))
                 else:
-                    flash('Invalid username or password', 'error')
+                    flash('Invalid username or password!!', 'error')
         finally:
             conn.close()
             
@@ -337,6 +337,7 @@ def api_checkout():
     data = request.json
     cart = data.get('cart', [])
     tendered = float(data.get('tendered', 0))
+    session_id = data.get('session_id')
     
     if not cart:
         return jsonify({'error': 'Cart is empty'}), 400
@@ -357,8 +358,8 @@ def api_checkout():
                 
             change = tendered - total
             
-            sql = "INSERT INTO sales (user_id, total_amount, tendered, change_amount) VALUES (%s, %s, %s, %s)"
-            cursor.execute(sql, (session['user_id'], total, tendered, change))
+            sql = "INSERT INTO sales (user_id, total_amount, tendered, change_amount, session_id) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(sql, (session['user_id'], total, tendered, change, session_id))
             sale_id = cursor.lastrowid
             
             for item in cart:
@@ -382,7 +383,7 @@ def api_checkout():
                 'message': 'Checkout successful', 
                 'total': total, 
                 'change': change,
-                'sale_id': sale_id,
+                'sale_id': session_id if session_id else sale_id,
                 'created_at': created_at
             })
     except Exception as e:
@@ -400,9 +401,31 @@ def api_sales():
     try:
         with conn.cursor() as cursor:
             if session.get('role') == 'staff':
-                cursor.execute("SELECT s.*, u.name as user_name FROM sales s JOIN users u ON s.user_id = u.id ORDER BY s.id DESC")
+                cursor.execute("""
+                    SELECT IFNULL(session_id, CAST(s.id AS CHAR)) as display_id, 
+                           s.user_id, u.name as user_name, 
+                           MIN(s.created_at) as created_at,
+                           SUM(s.total_amount) as total_amount, 
+                           SUM(s.tendered) as tendered, 
+                           SUM(s.change_amount) as change_amount
+                    FROM sales s 
+                    JOIN users u ON s.user_id = u.id 
+                    GROUP BY display_id, s.user_id, u.name 
+                    ORDER BY MAX(s.id) DESC
+                """)
             else:
-                cursor.execute("SELECT s.*, u.name as user_name FROM sales s JOIN users u ON s.user_id = u.id WHERE s.user_id=%s ORDER BY s.id DESC", (session['user_id'],))
+                cursor.execute("""
+                    SELECT CAST(s.id AS CHAR) as display_id, 
+                           s.user_id, u.name as user_name, 
+                           s.created_at as created_at,
+                           s.total_amount as total_amount, 
+                           s.tendered as tendered, 
+                           s.change_amount as change_amount
+                    FROM sales s 
+                    JOIN users u ON s.user_id = u.id 
+                    WHERE s.user_id=%s 
+                    ORDER BY s.id DESC
+                """, (session['user_id'],))
             sales = cursor.fetchall()
             for sale in sales:
                 sale['total_amount'] = float(sale['total_amount'])
@@ -412,26 +435,34 @@ def api_sales():
     finally:
         conn.close()
 
-@app.route('/api/sales/<int:sale_id>', methods=['GET'])
-def api_sale_detail(sale_id):
+@app.route('/api/sales/<display_id>', methods=['GET'])
+def api_sale_detail(display_id):
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 403
         
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM sales WHERE id=%s", (sale_id,))
-            sale = cursor.fetchone()
-            if not sale:
+            cursor.execute("SELECT * FROM sales WHERE session_id=%s OR id=%s", (display_id, display_id))
+            sale_rows = cursor.fetchall()
+            if not sale_rows:
                 return jsonify({'error': 'Sale not found'}), 404
                 
-            if session.get('role') != 'staff' and sale['user_id'] != session['user_id']:
+            if session.get('role') != 'staff' and sale_rows[0]['user_id'] != session['user_id']:
                 return jsonify({'error': 'Unauthorized'}), 403
                 
-            cursor.execute("SELECT si.*, p.name FROM sale_items si JOIN products p ON si.product_id = p.id WHERE si.sale_id=%s", (sale_id,))
+            cursor.execute("""
+                SELECT si.product_id, p.name, SUM(si.quantity) as quantity, si.price 
+                FROM sale_items si 
+                JOIN products p ON si.product_id = p.id 
+                JOIN sales s ON si.sale_id = s.id
+                WHERE s.session_id=%s OR s.id=%s
+                GROUP BY si.product_id, p.name, si.price
+            """, (display_id, display_id))
             items = cursor.fetchall()
             for item in items:
                 item['price'] = float(item['price'])
+                item['quantity'] = int(item['quantity'])
             return jsonify(items)
     finally:
         conn.close()
