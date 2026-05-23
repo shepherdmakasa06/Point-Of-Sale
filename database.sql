@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS sales (
     total_amount DECIMAL(10, 2) NOT NULL,
     tendered DECIMAL(10, 2) NOT NULL,
     change_amount DECIMAL(10, 2) NOT NULL,
+    session_id VARCHAR(50) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_sales_session_id (session_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -44,11 +46,14 @@ CREATE TABLE IF NOT EXISTS sale_items (
 
 CREATE TABLE IF NOT EXISTS settings (
     setting_key VARCHAR(50) PRIMARY KEY,
-    setting_value VARCHAR(255)
+    setting_value TEXT
 );
 
 INSERT IGNORE INTO settings (setting_key, setting_value) VALUES 
 ('store_name', 'Retail POS Store'), 
 ('store_address', '123 Main St, City, State'), 
 ('store_contact', '(555) 123-4567'), 
-('store_footer', 'Thank you for your business!');
+('store_footer', 'Thank you for your business!'),
+('auto_print', 'true'),
+('paper_size', 'auto'),
+('show_logo', 'false');

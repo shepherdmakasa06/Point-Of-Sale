@@ -367,6 +367,23 @@
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
 }
 
+.toast-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: fixed;
+  right: 1.25rem;
+  top: 1.25rem;
+  z-index: 9999;
+}
+
+.settings-save-message {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-left: 0.75rem;
+}
+
 /* Text decorations & cursor */
 .hover\:underline:hover {
   text-decoration: underline;

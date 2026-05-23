@@ -29,7 +29,7 @@ function showToast(message, type = 'info') {
 function createToastContainer() {
   const container = document.createElement('div');
   container.id = 'toast-container';
-  container.className = 'fixed top-5 right-5 z-50 flex flex-col gap-2';
+  container.className = 'toast-container';
   document.body.appendChild(container);
   return container;
 }
@@ -143,8 +143,11 @@ document.addEventListener('DOMContentLoaded', function() {
           } else {
             sales.forEach(sale => {
               const row = document.createElement('tr');
+              const saleLabel = sale.display_id && String(sale.display_id).startsWith('SESS')
+                ? `Session #: ${sale.session_number || sale.receipt_number}`
+                : `Receipt #: ${sale.receipt_number || sale.display_id}`;
               row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${sale.display_id && sale.display_id.startsWith('SESS') ? 'Session' : 'Sale'} #${sale.display_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${saleLabel}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(sale.created_at).toLocaleString()}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sale.user_name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${sale.total_amount.toFixed(2)}</td>
@@ -478,7 +481,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formData = new FormData(productForm);
     const productData = {
       name: formData.get('product-name'),
-      category: formData.get('product-category'),
       price: parseFloat(formData.get('product-price')),
       stock: parseInt(formData.get('product-stock'))
     };
@@ -518,7 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
         editingProductId = product.id;
         modalTitle.textContent = 'Edit Product';
         document.getElementById('product-name').value = product.name;
-        document.getElementById('product-category').value = product.category;
         document.getElementById('product-price').value = product.price;
         document.getElementById('product-stock').value = product.stock;
         productModal.style.display = 'block';
@@ -561,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('stock-search');
     if (searchInput && searchInput.value) {
       const q = searchInput.value.toLowerCase();
-      filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
     }
 
     filtered.forEach(product => {
@@ -570,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <td class="px-6 py-4 whitespace-nowrap">
           <div class="text-sm font-medium text-gray-900">${product.name}</div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.category}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${product.price.toFixed(2)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.stock}</td>
         <td class="px-6 py-4 whitespace-nowrap">
@@ -583,15 +583,6 @@ document.addEventListener('DOMContentLoaded', function() {
       `;
       tbody.appendChild(row);
     });
-  }
-
-  function getIconForCategory(category) {
-    const icons = {
-      'Electronics': 'laptop',
-      'Accessories': 'mouse',
-      'Audio': 'headphones'
-    };
-    return icons[category] || 'box';
   }
 
   function getStatusClass(status) {
@@ -695,9 +686,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (storeAddressEl && settings.store_address) storeAddressEl.value = settings.store_address;
         if (storeContactEl && settings.store_contact) storeContactEl.value = settings.store_contact;
         if (storeFooterEl && settings.store_footer) storeFooterEl.value = settings.store_footer;
-        
+
         if (autoPrintEl && settings.auto_print) autoPrintEl.checked = (settings.auto_print === 'true');
         if (paperSizeEl && settings.paper_size) paperSizeEl.value = settings.paper_size;
+        const showLogoEl = document.getElementById('show-logo');
+        if (showLogoEl && settings.show_logo) showLogoEl.checked = (settings.show_logo === 'true');
       }
     } catch (err) {
       console.error('Failed to fetch settings', err);
@@ -705,15 +698,45 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   const receiptSettingsForm = document.getElementById('receipt-settings-form');
+  const setFormMessage = (form, message, type = 'success') => {
+    let messageEl = form.querySelector('.settings-save-message');
+    if (!messageEl) {
+      messageEl = document.createElement('span');
+      messageEl.className = 'settings-save-message';
+      form.appendChild(messageEl);
+    }
+    messageEl.textContent = message;
+    messageEl.classList.remove('text-green-600', 'text-red-600');
+    messageEl.classList.add(type === 'success' ? 'text-green-600' : 'text-red-600');
+  };
+  const getSettingValue = (id) => {
+    const element = document.getElementById(id);
+    return element ? element.value : '';
+  };
+  const getSettingChecked = (id) => {
+    const element = document.getElementById(id);
+    return element && element.checked ? 'true' : 'false';
+  };
+  const showSettingsError = async (res, fallbackMessage) => {
+    try {
+      const data = await res.json();
+      return data.error || fallbackMessage;
+    } catch (err) {
+      return fallbackMessage;
+    }
+  };
+
   if (receiptSettingsForm) {
-    receiptSettingsForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
+    const saveReceiptSettings = async function() {
       const settingsData = {
-        store_name: document.getElementById('setting-store-name').value,
-        store_address: document.getElementById('setting-store-address').value,
-        store_contact: document.getElementById('setting-store-contact').value,
-        store_footer: document.getElementById('setting-store-footer').value
+        store_name: getSettingValue('setting-store-name'),
+        store_address: getSettingValue('setting-store-address'),
+        store_contact: getSettingValue('setting-store-contact'),
+        store_footer: getSettingValue('setting-store-footer'),
+        show_logo: getSettingChecked('show-logo')
       };
+      const submitButton = receiptSettingsForm.querySelector('button[type="submit"]');
+      if (submitButton) submitButton.disabled = true;
 
       try {
         const res = await fetch('/api/settings', {
@@ -722,24 +745,42 @@ document.addEventListener('DOMContentLoaded', function() {
           body: JSON.stringify(settingsData)
         });
         if (res.ok) {
-          showToast('Receipt settings saved successfully!', 'success');
+          showToast('Design saved successfully', 'success');
+          setFormMessage(receiptSettingsForm, 'Design saved successfully', 'success');
         } else {
-          showToast('Failed to save settings', 'error');
+          const message = await showSettingsError(res, 'Failed to save design');
+          showToast(message, 'error');
+          setFormMessage(receiptSettingsForm, message, 'error');
         }
       } catch (err) {
-        showToast('Error saving settings', 'error');
+        showToast('Error saving design', 'error');
+        setFormMessage(receiptSettingsForm, 'Error saving design', 'error');
+      } finally {
+        if (submitButton) submitButton.disabled = false;
       }
+    };
+    receiptSettingsForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      saveReceiptSettings();
     });
+    const submitButton = receiptSettingsForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        saveReceiptSettings();
+      });
+    }
   }
 
   const printerSettingsForm = document.getElementById('printer-settings-form');
   if (printerSettingsForm) {
-    printerSettingsForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
+    const savePrinterSettings = async function() {
       const settingsData = {
-        auto_print: document.getElementById('setting-auto-print').checked ? 'true' : 'false',
-        paper_size: document.getElementById('setting-paper-size').value
+        auto_print: getSettingChecked('setting-auto-print'),
+        paper_size: getSettingValue('setting-paper-size') || 'auto'
       };
+      const submitButton = printerSettingsForm.querySelector('button[type="submit"]');
+      if (submitButton) submitButton.disabled = true;
 
       try {
         const res = await fetch('/api/settings', {
@@ -749,13 +790,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         if (res.ok) {
           showToast('Printer settings saved successfully!', 'success');
+          setFormMessage(printerSettingsForm, 'Printer settings saved successfully!', 'success');
         } else {
-          showToast('Failed to save printer settings', 'error');
+          const message = await showSettingsError(res, 'Failed to save printer settings');
+          showToast(message, 'error');
+          setFormMessage(printerSettingsForm, message, 'error');
         }
       } catch (err) {
         showToast('Error saving printer settings', 'error');
+        setFormMessage(printerSettingsForm, 'Error saving printer settings', 'error');
+      } finally {
+        if (submitButton) submitButton.disabled = false;
       }
+    };
+    printerSettingsForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      savePrinterSettings();
     });
+    const submitButton = printerSettingsForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        savePrinterSettings();
+      });
+    }
   }
 
   // Initialize

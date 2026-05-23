@@ -29,7 +29,7 @@ function showToast(message, type = 'info') {
 function createToastContainer() {
   const container = document.createElement('div');
   container.id = 'toast-container';
-  container.className = 'fixed top-5 right-5 z-50 flex flex-col gap-2';
+  container.className = 'toast-container';
   document.body.appendChild(container);
   return container;
 }
@@ -357,7 +357,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Clear cart and inputs
         cart = [];
-        const amountTenderedValue = amountTendered.value;
         amountTendered.value = '';
         updateCart();
 
@@ -367,17 +366,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Refresh products to get updated stock
         fetchProducts();
 
-        // Check auto-print setting and print if enabled
-        try {
-          const settingsRes = await fetch('/api/settings');
-          if (settingsRes.ok) {
-            const settings = await settingsRes.json();
-            if (settings.auto_print === 'true') {
-              printReceipt(data.sale_id, data.total, amountTenderedValue, data.change, data.created_at);
-            }
-          }
-        } catch (e) {
-          console.error("Auto-print check failed", e);
+        if (!data.printed && data.print_error && data.print_error !== 'Auto-print is disabled') {
+          showToast(`Sale saved, but receipt did not print: ${data.print_error}`, 'warning');
         }
       } else {
         const err = await res.json();
@@ -410,16 +400,21 @@ document.addEventListener('DOMContentLoaded', function() {
           transactionElement.innerHTML = `
             <div class="flex justify-between items-start">
               <div>
-                <h4 class="font-semibold">${sale.display_id && sale.display_id.startsWith('SESS') ? 'Session' : 'Transaction'} #${sale.display_id}</h4>
+                <h4 class="font-semibold">Receipt #: ${sale.receipt_number || String(sale.display_id).padStart(4, '0')}</h4>
                 <p class="text-gray-600">${new Date(sale.created_at).toLocaleString()}</p>
               </div>
               <span class="text-green-600 font-semibold">$${sale.total_amount.toFixed(2)}</span>
             </div>
-            <div class="flex justify-between items-center mt-2">
+            <div class="flex justify-between items-start mt-2">
               <p class="text-sm text-gray-600">Sale Completed</p>
-              <button class="text-blue-500 hover:text-blue-700 text-sm" onclick="printReceipt('${sale.display_id}', ${sale.total_amount}, ${sale.tendered}, ${sale.change_amount}, '${sale.created_at}')">
-                <i class="fas fa-print mr-1"></i>Print Receipt
-              </button>
+              <div class="flex flex-col items-end gap-2">
+                <button class="text-blue-500 hover:text-blue-700 text-sm receipt-preview-btn" data-id="${sale.display_id}">
+                  Preview Receipt
+                </button>
+                <button class="text-blue-500 hover:text-blue-700 text-sm receipt-print-btn" data-id="${sale.display_id}">
+                  <i class="fas fa-print mr-1"></i>Print Receipt
+                </button>
+              </div>
             </div>
           `;
           transactionsContainer.appendChild(transactionElement);
@@ -430,103 +425,136 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Print Receipt functionality
-  window.printReceipt = async function(saleId, total, tendered, change, date) {
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
+  }
+
+  function getReceiptModal() {
+    let modal = document.getElementById('receipt-preview-modal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'receipt-preview-modal';
+    modal.className = 'receipt-preview-modal hidden';
+    modal.innerHTML = `
+      <div class="receipt-preview-dialog">
+        <div class="receipt-preview-header">
+          <h3>Receipt Preview</h3>
+          <button type="button" class="receipt-preview-close">&times;</button>
+        </div>
+        <div id="receipt-preview-content" class="receipt-preview-content"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.receipt-preview-close').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+      }
+    });
+    return modal;
+  }
+
+  function renderReceiptPreview(receipt) {
+    const settings = receipt.settings || {};
+    const logoHtml = settings.show_logo === 'true'
+      ? '<img src="/static/logo.png" alt="Pro-Tech Logo" style="display:block;max-width:120px;max-height:70px;width:auto;height:auto;margin:0 auto 8px;object-fit:contain;">'
+      : '';
+    const itemsHtml = receipt.items.map(item => `
+      <tr>
+        <td class="py-1">${escapeHtml(item.name)}</td>
+        <td class="py-1 text-right">${item.quantity}</td>
+        <td class="py-1 text-right">$${Number(item.price).toFixed(2)}</td>
+        <td class="py-1 text-right">$${Number(item.line_total).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div class="font-mono text-sm text-gray-900">
+        <div class="text-center border-b border-dashed border-gray-700 pb-3 mb-3">
+          ${logoHtml}
+          <h2 class="font-bold text-lg">${escapeHtml(settings.store_name || 'Retail POS')}</h2>
+          ${settings.store_address ? `<p>${escapeHtml(settings.store_address)}</p>` : ''}
+          ${settings.store_contact ? `<p>${escapeHtml(settings.store_contact)}</p>` : ''}
+          <p class="mt-2">Receipt #: ${escapeHtml(receipt.receipt_number)}</p>
+          <p>${new Date(receipt.created_at).toLocaleString()}</p>
+          <p>Cashier: ${escapeHtml(receipt.user_name)}</p>
+        </div>
+        <table class="w-full mb-3">
+          <thead class="border-b border-gray-700">
+            <tr>
+              <th class="py-1 text-left">Item</th>
+              <th class="py-1 text-right">Qty</th>
+              <th class="py-1 text-right">Price</th>
+              <th class="py-1 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="border-t border-dashed border-gray-700 pt-3 space-y-1">
+          <div class="flex justify-between"><strong>Total:</strong><span>$${Number(receipt.total_amount).toFixed(2)}</span></div>
+          <div class="flex justify-between"><strong>Tendered:</strong><span>$${Number(receipt.tendered).toFixed(2)}</span></div>
+          <div class="flex justify-between"><strong>Change:</strong><span>$${Number(receipt.change_amount).toFixed(2)}</span></div>
+        </div>
+        <p class="text-center border-t border-dashed border-gray-700 mt-3 pt-3">${escapeHtml(settings.store_footer || 'Thank you for your purchase!')}</p>
+      </div>
+    `;
+  }
+
+  async function previewReceipt(saleId) {
     try {
-      // Fetch settings and sale details in parallel
-      const [settingsRes, saleRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch(`/api/sales/${saleId}`)
-      ]);
-      
-      let settings = {
-        store_name: 'Retail POS Store',
-        store_address: '123 Main St, City, State',
-        store_contact: '(555) 123-4567',
-        store_footer: 'Thank you for your purchase!'
-      };
-      
-      if (settingsRes.ok) {
-        const fetchedSettings = await settingsRes.json();
-        settings = { ...settings, ...fetchedSettings };
+      const res = await fetch(`/api/sales/${encodeURIComponent(saleId)}/receipt`);
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to load receipt preview', 'error');
+        return;
       }
 
-      let itemsHtml = '<p><em>Error loading items</em></p>';
-      
-      if (saleRes.ok) {
-        const items = await saleRes.json();
-        itemsHtml = `
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
-            <thead style="border-bottom: 1px solid #000;">
-              <tr>
-                <th style="text-align: left; padding: 5px 0;">Item</th>
-                <th style="text-align: right; padding: 5px 0;">Qty</th>
-                <th style="text-align: right; padding: 5px 0;">Price</th>
-                <th style="text-align: right; padding: 5px 0;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${items.map(item => `
-                <tr>
-                  <td style="padding: 5px 0;">${item.name}</td>
-                  <td style="text-align: right; padding: 5px 0;">${item.quantity}</td>
-                  <td style="text-align: right; padding: 5px 0;">$${Number(item.price).toFixed(2)}</td>
-                  <td style="text-align: right; padding: 5px 0;">$${(Number(item.price) * item.quantity).toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      }
-
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Receipt #${saleId}</title>
-            <style>
-              @page { margin: 0; size: ${settings.paper_size && settings.paper_size !== 'auto' ? settings.paper_size : 'auto'}; }
-              body { font-family: 'Courier New', Courier, monospace; margin: 10px; font-size: 14px; width: ${settings.paper_size ? settings.paper_size.split(' ')[0] : 'auto'}; }
-              .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-              .details { margin-bottom: 20px; }
-              .totals { border-top: 1px dashed #000; padding-top: 10px; }
-              .totals-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-              .footer { text-align: center; margin-top: 20px; font-size: 0.9em; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h2>${settings.store_name || 'Retail POS'}</h2>
-              ${settings.store_address ? `<p>${settings.store_address}</p>` : ''}
-              ${settings.store_contact ? `<p>${settings.store_contact}</p>` : ''}
-              <p style="margin-top: 10px;">Receipt #${saleId}</p>
-              <p>${new Date(date).toLocaleString()}</p>
-            </div>
-            <div class="details">
-              ${itemsHtml}
-            </div>
-            <div class="totals">
-              <div class="totals-row"><span><strong>Total Amount:</strong></span> <span>$${Number(total).toFixed(2)}</span></div>
-              <div class="totals-row"><span><strong>Tendered:</strong></span> <span>$${Number(tendered).toFixed(2)}</span></div>
-              <div class="totals-row"><span><strong>Change:</strong></span> <span>$${Number(change).toFixed(2)}</span></div>
-            </div>
-            <div class="footer">
-              <p>${settings.store_footer || 'Thank you for your purchase!'}</p>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      
-      // Delay printing slightly to ensure content is fully loaded
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
+      const modal = getReceiptModal();
+      document.getElementById('receipt-preview-content').innerHTML = renderReceiptPreview(data);
+      modal.classList.remove('hidden');
     } catch (err) {
-      showToast('Error generating receipt', 'error');
+      showToast('Failed to load receipt preview', 'error');
     }
-  };
+  }
+
+  async function printTransactionReceipt(saleId, button) {
+    button.disabled = true;
+    try {
+      const res = await fetch(`/api/sales/${encodeURIComponent(saleId)}/print`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Receipt sent to printer', 'success');
+      } else {
+        showToast(data.error || 'Receipt did not print', 'error');
+      }
+    } catch (err) {
+      showToast('Receipt did not print', 'error');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    const previewBtn = e.target.closest('.receipt-preview-btn');
+    if (previewBtn) {
+      previewReceipt(previewBtn.dataset.id);
+      return;
+    }
+
+    const printBtn = e.target.closest('.receipt-print-btn');
+    if (printBtn) {
+      printTransactionReceipt(printBtn.dataset.id, printBtn);
+    }
+  });
 
   // Profile Form update handling
   const profileForms = document.querySelectorAll('#profile-section form');
