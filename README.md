@@ -131,6 +131,6 @@ Aspiring Software Engineer | Full Stack Developer
 
 ---
 
-## ⭐ Support
+##  Support
 
 If you like this project, feel free to star the repository.
